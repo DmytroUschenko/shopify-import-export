@@ -1,0 +1,37 @@
+{
+  "name": "@shopify-import/web",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@9.0.0",
+  "scripts": {
+    "build": "react-router build",
+    "dev": "shopify app dev --skip-dependencies-installation --path .",
+    "dev:vite": "react-router dev",
+    "typecheck": "react-router typegen && tsc --noEmit",
+    "lint": "eslint app"
+  },
+  "dependencies": {
+    "@shopify/app-bridge-react": "^4.1.6",
+    "@shopify/polaris": "^13.9.2",
+    "@shopify/shopify-api": "^13.0.0",
+    "@shopify/shopify-app-react-router": "^1.0.0",
+    "@shopify/shopify-app-session-storage-postgresql": "^6.0.0",
+    "@shopify-import/shared": "workspace:*",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "react-router": "^7.1.0"
+  },
+  "devDependencies": {
+    "@react-router/dev": "^7.1.0",
+    "@shopify/cli": "^3.90.1",
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^8.0.0",
+    "typescript": "*",
+    "vite": "^5.4.0",
+    "vite-tsconfig-paths": "^5.1.0"
+  }
+}
