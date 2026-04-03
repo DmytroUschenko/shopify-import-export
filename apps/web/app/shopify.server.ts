@@ -1,6 +1,9 @@
 import "@shopify/shopify-api/adapters/node";
-import { shopifyApp } from "@shopify/shopify-app-react-router/server";
-import { ApiVersion, AppDistribution } from "@shopify/shopify-api";
+import {
+  AppDistribution,
+  shopifyApp,
+} from "@shopify/shopify-app-react-router/server";
+import { ApiVersion } from "@shopify/shopify-api";
 import { PostgreSQLSessionStorage } from "@shopify/shopify-app-session-storage-postgresql";
 
 const shopify = shopifyApp({
@@ -9,7 +12,7 @@ const shopify = shopifyApp({
   appUrl: process.env.SHOPIFY_APP_URL,
   scopes: ["read_orders", "read_customers", "read_products"],
   apiVersion: ApiVersion.October24,
-  distribution: AppDistribution.ShopifyAdmin,
+  distribution: AppDistribution.AppStore,
   isEmbeddedApp: true,
   sessionStorage: new PostgreSQLSessionStorage(process.env.DATABASE_URL!),
   hooks: {

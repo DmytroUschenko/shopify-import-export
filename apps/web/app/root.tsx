@@ -7,6 +7,8 @@ import {
   useLoaderData,
 } from "react-router";
 import { AppProvider } from "@shopify/shopify-app-react-router/react";
+import { AppProvider as PolarisAppProvider } from "@shopify/polaris";
+import enTranslations from "@shopify/polaris/locales/en.json";
 import type { LoaderFunctionArgs } from "react-router";
 
 export async function loader({ request: _request }: LoaderFunctionArgs) {
@@ -26,7 +28,9 @@ export default function App() {
       </head>
       <body>
         <AppProvider isEmbeddedApp apiKey={apiKey}>
-          <Outlet />
+          <PolarisAppProvider i18n={enTranslations}>
+            <Outlet />
+          </PolarisAppProvider>
         </AppProvider>
         <ScrollRestoration />
         <Scripts />

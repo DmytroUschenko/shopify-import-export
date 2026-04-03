@@ -78,7 +78,7 @@ All env vars are typed via NestJS `ConfigModule`. Reference `.env.example` for t
 
 | Variable | Used by |
 |---|---|
-| `DATABASE_URL` | `apps/api` via TypeORM |
+| `DATABASE_URL` | `apps/web` via Shopify PostgreSQL session storage and `apps/api` via TypeORM |
 | `REDIS_URL` | `apps/api` via BullMQ / ioredis |
 | `SHOPIFY_API_KEY` | `apps/web` + `apps/api` |
 | `SHOPIFY_API_SECRET` | `apps/api` (HMAC validation) |

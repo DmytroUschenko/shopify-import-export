@@ -1,0 +1,126 @@
+# Local development compose — hot-reload for api and web.
+#
+# Usage:
+#   make dev          — start all services (postgres, redis, api, web)
+#   make dev-down     — stop and remove dev containers (keeps volumes)
+#   make dev-logs     — tail all dev logs
+#
+# First run installs node_modules inside named Docker volumes so macOS host
+# binaries never conflict with the Linux container binaries. Subsequent
+# starts reuse those volumes — only re-installs if the lockfile changes.
+
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-shopify_import}
+      POSTGRES_USER: ${POSTGRES_USER:-user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-user} -d ${POSTGRES_DB:-shopify_import}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    ports:
+      - '6379:6379'
+
+  api:
+    image: node:20-alpine
+    working_dir: /app
+    restart: unless-stopped
+    # Named volumes shadow the host node_modules so Linux binaries are used.
+    volumes:
+      - .:/app
+      - dev_api_root_nm:/app/node_modules
+      - dev_api_nm:/app/apps/api/node_modules
+      - dev_api_shared_nm:/app/packages/shared/node_modules
+      - dev_api_config_nm:/app/packages/config/node_modules
+    environment:
+      NODE_ENV: development
+      API_PORT: ${API_PORT:-3001}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://user:password@postgres:5432/shopify_import}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      SHOPIFY_API_KEY: ${SHOPIFY_API_KEY:-placeholder_api_key}
+      SHOPIFY_API_SECRET: ${SHOPIFY_API_SECRET:-placeholder_api_secret}
+      SHOPIFY_APP_URL: ${SHOPIFY_APP_URL:-http://localhost}
+      TYPEORM_SYNCHRONIZE: 'true'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://127.0.0.1:3001/health || exit 1']
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    command: >
+      sh -c "corepack enable &&
+             corepack prepare pnpm@9 --activate &&
+             pnpm install &&
+             pnpm --filter @shopify-import/api dev:docker"
+    ports:
+      - '3001:3001'
+
+  web:
+    image: node:20-alpine
+    working_dir: /app
+    restart: unless-stopped
+    volumes:
+      - .:/app
+      - dev_web_root_nm:/app/node_modules
+      - dev_web_nm:/app/apps/web/node_modules
+      - dev_web_shared_nm:/app/packages/shared/node_modules
+      - dev_web_config_nm:/app/packages/config/node_modules
+    environment:
+      NODE_ENV: development
+      WEB_PORT: ${WEB_PORT:-3000}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://user:password@postgres:5432/shopify_import}
+      API_INTERNAL_URL: http://api:3001
+      SHOPIFY_API_KEY: ${SHOPIFY_API_KEY:-placeholder_api_key}
+      SHOPIFY_API_SECRET: ${SHOPIFY_API_SECRET:-placeholder_api_secret}
+      SHOPIFY_APP_URL: ${SHOPIFY_APP_URL:-http://localhost}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      api:
+        condition: service_started
+    command: >
+      sh -c "corepack enable &&
+             corepack prepare pnpm@9 --activate &&
+             pnpm install &&
+             pnpm --filter @shopify-import/web dev:vite"
+    ports:
+      - '3000:3000'
+
+volumes:
+  postgres-data:
+  dev_api_root_nm:
+  dev_api_nm:
+  dev_api_shared_nm:
+  dev_api_config_nm:
+  dev_web_root_nm:
+  dev_web_nm:
+  dev_web_shared_nm:
+  dev_web_config_nm:
