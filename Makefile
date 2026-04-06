@@ -71,8 +71,8 @@ ps: ## Show status of all services
 	docker compose ps
 
 health: ## Hit the /health endpoint through nginx
-	@curl -sf http://localhost:8080/health | python3 -m json.tool 2>/dev/null \
-		|| curl -sf http://localhost:8080/health \
+	@curl -sf http://localhost:8082/health | python3 -m json.tool 2>/dev/null \
+		|| curl -sf http://localhost:8082/health \
 		|| echo "Health check failed — services may still be starting"
 
 logs: ## Tail logs for all services (Ctrl-C to exit)

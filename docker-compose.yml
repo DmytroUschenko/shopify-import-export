@@ -16,8 +16,8 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
-    ports:
-      - '5432:5432'
+    # ports: internal only — not exposed to host
+    #  - '5432:5432'
     volumes:
       - postgres-data:/var/lib/postgresql/data
 
@@ -30,8 +30,8 @@ services:
       timeout: 5s
       retries: 5
       start_period: 5s
-    ports:
-      - '6379:6379'
+    # ports: internal only — not exposed to host
+    #  - '6379:6379'
 
   api:
     build:
@@ -58,8 +58,8 @@ services:
       timeout: 5s
       retries: 5
       start_period: 20s
-    ports:
-      - '3001:3001'
+    # ports: internal only — accessed via nginx
+    #  - '3001:3001'
 
   web:
     build:
@@ -85,8 +85,8 @@ services:
       timeout: 5s
       retries: 5
       start_period: 20s
-    ports:
-      - '3000:3000'
+    # ports: internal only — accessed via nginx
+    #  - '3000:3000'
 
   nginx:
     image: nginx:alpine
@@ -97,7 +97,7 @@ services:
       web:
         condition: service_healthy
     ports:
-      - '8080:80'
+      - '127.0.0.1:8082:80'
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
 
