@@ -28,9 +28,9 @@ deploy: ## First-time deploy: copy .env.example → .env (if missing), build ima
 	@echo "$(CYAN)Waiting for postgres to be healthy…$(RESET)"
 	@until docker compose exec postgres pg_isready -U $${POSTGRES_USER:-user} > /dev/null 2>&1; do sleep 1; done
 	@echo "$(CYAN)Ensuring database exists…$(RESET)"
-	docker compose exec postgres psql -U $${POSTGRES_USER:-user} -tc \
+	docker compose exec postgres psql -U postgres -tc \
 		"SELECT 1 FROM pg_database WHERE datname = '$${POSTGRES_DB:-shopify_import}'" \
-		| grep -q 1 || docker compose exec postgres psql -U $${POSTGRES_USER:-user} \
+		| grep -q 1 || docker compose exec postgres psql -U postgres \
 		-c "CREATE DATABASE $${POSTGRES_DB:-shopify_import};"
 	@echo "$(CYAN)Starting remaining services…$(RESET)"
 	docker compose up --build -d
