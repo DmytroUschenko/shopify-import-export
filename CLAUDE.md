@@ -102,3 +102,8 @@ Development containers (`docker-compose.dev.yml`) use `ts-node-dev` (API) and Vi
 
 ### Shopify app config
 `apps/web/shopify.app.toml` defines the app manifest (client_id, webhook API version 2026-04, access scopes). The `application_url` must match the ngrok tunnel in development.
+
+### ⚠️ Shopify requires a clean domain — subpaths do not work
+`SHOPIFY_APP_URL` must be a **bare domain** (e.g. `https://uho.kharkiv.ua`), never a subpath like `https://uho.kharkiv.ua/shopify`. Shopify embedded apps are loaded in an iframe and the OAuth/auth redirect flow breaks when the app is mounted under a path prefix. The same URL must be set in the Shopify Partners dashboard as the App URL. If the server hosts multiple apps under one domain, each Shopify app needs its own subdomain (e.g. `shopify.uho.kharkiv.ua`).
+
+**nginx requirement**: the location block proxying to the Shopify app must NOT set `X-Frame-Options`. Declaring `add_header` in a child location block overrides all `add_header` directives from the parent server block, so re-declare other security headers explicitly.
