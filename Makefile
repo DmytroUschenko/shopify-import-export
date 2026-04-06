@@ -23,7 +23,16 @@ deploy: ## First-time deploy: copy .env.example → .env (if missing), build ima
 		echo "$(CYAN)Fill in the required values in .env, then run 'make deploy' again.$(RESET)"; \
 		exit 1; \
 	fi
-	@echo "$(CYAN)Building images and starting all services…$(RESET)"
+	@echo "$(CYAN)Building images and starting postgres + redis…$(RESET)"
+	docker compose up --build -d postgres redis
+	@echo "$(CYAN)Waiting for postgres to be healthy…$(RESET)"
+	@until docker compose exec postgres pg_isready -U $${POSTGRES_USER:-user} > /dev/null 2>&1; do sleep 1; done
+	@echo "$(CYAN)Ensuring database exists…$(RESET)"
+	docker compose exec postgres psql -U $${POSTGRES_USER:-user} -tc \
+		"SELECT 1 FROM pg_database WHERE datname = '$${POSTGRES_DB:-shopify_import}'" \
+		| grep -q 1 || docker compose exec postgres psql -U $${POSTGRES_USER:-user} \
+		-c "CREATE DATABASE $${POSTGRES_DB:-shopify_import};"
+	@echo "$(CYAN)Starting remaining services…$(RESET)"
 	docker compose up --build -d
 	@echo "$(CYAN)Waiting for services to become healthy…$(RESET)"
 	@$(MAKE) ps
