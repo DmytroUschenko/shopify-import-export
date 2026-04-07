@@ -7,6 +7,7 @@ import {
   useLoaderData,
 } from "react-router";
 import { AppProvider } from "@shopify/shopify-app-react-router/react";
+import { NavMenu } from "@shopify/app-bridge-react";
 import { AppProvider as PolarisAppProvider } from "@shopify/polaris";
 import enTranslations from "@shopify/polaris/locales/en.json";
 import type { LoaderFunctionArgs } from "react-router";
@@ -29,6 +30,12 @@ export default function App() {
       <body>
         <AppProvider isEmbeddedApp apiKey={apiKey}>
           <PolarisAppProvider i18n={enTranslations}>
+            <NavMenu>
+              <a href="/" rel="home">Dashboard</a>
+              <a href="/import">Import</a>
+              <a href="/entities">Entities</a>
+              <a href="/configurations">Configurations</a>
+            </NavMenu>
             <Outlet />
           </PolarisAppProvider>
         </AppProvider>

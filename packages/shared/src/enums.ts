@@ -14,3 +14,10 @@ export enum ImportStatus {
   Failed = 'failed',
   BulkImported = 'bulk_imported',
 }
+
+export enum ExportStatus {
+  Pending = 'pending',
+  Processing = 'processing',
+  Exported = 'exported',
+  Failed = 'failed',
+}

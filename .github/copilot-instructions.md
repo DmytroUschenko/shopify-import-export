@@ -17,9 +17,9 @@ This is a **Turborepo + pnpm** monorepo. Understand which app owns what before s
 
 ## TypeScript Types vs TypeORM Entities
 
-- `packages/shared/src/enums.ts` — `EntityType`, `ImportStatus` enums (used by both apps)
+- `packages/shared/src/enums.ts` — `EntityType`, `ImportStatus`, `ExportStatus` enums (used by both apps)
 - `packages/shared/src/payloads.ts` — `OrderPayload`, `CustomerPayload`, `ProductPayload` interfaces (type the `data: JSONB` column)
-- `apps/api/src/entities/` — three TypeORM classes only: `ShopEntity`, `DbImportEntity`, `DbHistoryEntity`
+- `apps/api/src/entities/` — TypeORM classes: `ShopEntity`, `DbImportEntity`, `DbHistoryEntity`, `EntityExportEntity`, `EntityExportConfigEntity`
 - There are **no** `OrderEntity`, `CustomerEntity`, or `ProductEntity` TypeORM classes — all Shopify data lives in `DbImportEntity.data` (JSONB)
 
 ---
@@ -32,6 +32,8 @@ This is a **Turborepo + pnpm** monorepo. Understand which app owns what before s
 - `import/` — BullMQ queues, processors, `BulkImportService`
 - `entities/` — `GET /api/entities` query endpoint
 - `health/` — `GET /health`
+- `configuration/` — `GET|PUT /api/configuration/:shopDomain/:entityType` — export API credentials per entity type; `apiSecret` write-only
+- `export/` — `ProcessorListService` registry, per-entity processors, `EntityExportRepository`; `ExportStatus` state machine
 
 ### Entity types (values of `EntityType` enum)
 `order`, `customer`, `product`, `fulfillment`
@@ -39,8 +41,15 @@ This is a **Turborepo + pnpm** monorepo. Understand which app owns what before s
 ### Import status values (`ImportStatus` enum)
 `received`, `processing`, `processed`, `failed`, `bulk_imported`
 
+### Export status values (`ExportStatus` enum)
+`pending`, `processing`, `exported`, `failed`
+
+Valid transitions: `pending → processing → exported | failed`. Never skip `processing`; never revert to `pending`.
+
 ### BullMQ queue names
 - `process-entity` — individual webhook event processing
+- `bulk-import` — cursor-paginated Shopify entity import
+- `export-entity` — per-entity export to external system (planned)
 
 ---
 
@@ -92,9 +101,36 @@ Never hardcode secrets. Always read from `ConfigService`.
 
 - Shopify webhooks **must** receive HTTP 200 within 5 seconds — do all heavy work in BullMQ workers, not in the controller.
 - `db_import` has a `UNIQUE (shop_id, entity_id, entity_type)` constraint — always use upsert (`INSERT ... ON CONFLICT DO UPDATE`), never plain insert.
+- `entity_export` has a `UNIQUE (shop_id, entity_id, entity_type)` constraint — always use `EntityExportRepository.upsert()`, never plain insert.
 - `db_import_history` is an **immutable audit log** — never update or delete rows from it.
 - Inter-service communication uses the internal Docker network (`api:3001`), not `localhost`.
 - The `packages/shared` package must remain free of any Node.js-only or NestJS-only dependencies so it can be imported by the frontend.
+- `apiSecret` in `entity_export_config` is **write-only** — never return it in API responses; omit it explicitly in all DTOs and serializers.
+- `ProcessorListService` is a **singleton** — its processor `Map` is shared across all requests; never store per-request state in it.
+
+---
+
+## Export Pipeline Flow
+
+```
+PUT /api/configuration/:shopDomain/:entityType  ← store API credentials (apiSecret write-only)
+  ↓
+(trigger: webhook, scheduled job, or manual action)
+  ↓
+EntityExportRepository.upsert({ status: Pending })
+  ↓
+ProcessorListService.process(exportRecord)
+  ↓ getProcessor(entityType) → throws NotFoundException if not registered
+  ↓ ConfigurationService.getConfig(shopDomain, entityType)
+EntityProcessor.process(exportRecord)           ← calls external API with credentials
+  ↓
+EntityExportRepository.updateStatus(id, Exported | Failed)
+```
+
+State machine: `Pending → Processing → Exported | Failed`
+- Never skip `Processing`.
+- Never revert to `Pending`.
+- Throw to signal failure (BullMQ will retry).
 
 ---
 
@@ -109,5 +145,9 @@ Before writing or modifying code in any area below, **always** call `read_file` 
 | `apps/api/**` — any NestJS module, service, guard, pipe | `.agents/skills/nestjs-best-practices/SKILL.md` |
 | `apps/api/src/entities/**` — TypeORM entities, migrations, queries | `.agents/skills/typeorm/SKILL.md` |
 | `**/Dockerfile` — any Dockerfile | `.agents/skills/multi-stage-dockerfile/SKILL.md` |
+| `modules/export/**`, `modules/configuration/**`, `entities/entity-export*.ts` — export pipeline, processor registry, ExportStatus state machine | `.agents/skills/export-pipeline/SKILL.md` |
+| Any file with `@Processor`, `InjectQueue`, `WorkerHost`, `BullModule` — BullMQ queues and workers | `.agents/skills/bullmq/SKILL.md` |
+| Any Shopify Admin GraphQL API call from `apps/api/src/` — pagination, rate limits, error handling | `.agents/skills/shopify-graphql/SKILL.md` |
+| Feature design spanning >1 module — "let's add", "design a", "should we", "how should we approach" | `.agents/skills/brainstorm/SKILL.md` |
 
 Do **not** skip this step. Reading the skill is mandatory before implementing, reviewing, or refactoring code in the listed areas.

@@ -197,6 +197,43 @@ make dev-down
 
 ---
 
+## Connecting to the Database with TablePlus
+
+When the dev stack is running, the postgres container exposes port **5432** on `localhost`. You can inspect data directly with [TablePlus](https://tableplus.com/).
+
+### Connection settings
+
+| Field | Value |
+|---|---|
+| **Host** | `127.0.0.1` |
+| **Port** | `5432` |
+| **User** | `user` |
+| **Password** | `password` |
+| **Database** | `shopify_import` |
+
+> These are the default credentials from `.env.example` / `docker-compose.dev.yml`. If you changed `DATABASE_URL` in your `.env`, parse the credentials from your custom URL: `postgresql://<user>:<password>@<host>:<port>/<database>`.
+
+### Steps
+
+1. Open TablePlus → **Create a new connection** → select **PostgreSQL**.
+2. Fill in the fields from the table above.
+3. Click **Test** — you should see a green "Connection is OK" banner.
+4. Click **Connect**.
+
+The main tables you'll work with:
+
+| Table | Description |
+|---|---|
+| `shop` | Registered Shopify stores |
+| `db_import` | Imported entity records (JSONB payload in `data`) |
+| `db_import_history` | Immutable audit log of status transitions |
+| `entity_export` | Export records and their `ExportStatus` |
+| `entity_export_config` | Per-shop, per-entity-type export API credentials |
+
+> `entity_export_config.api_secret` is write-only in the app — but it is stored in plain text in the database, so keep your dev postgres inaccessible from outside localhost.
+
+---
+
 ## Troubleshooting
 
 ### ngrok URL changed (free plan) after restart

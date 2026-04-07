@@ -5,4 +5,5 @@ export default [
   route("auth/*", "routes/auth.$.tsx"),
   route("entities", "routes/entities._index.tsx"),
   route("import", "routes/import._index.tsx"),
+  route("configurations", "routes/configurations._index.tsx"),
 ] satisfies RouteConfig;

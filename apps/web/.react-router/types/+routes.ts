@@ -25,12 +25,15 @@ type Pages = {
   "/import": {
     params: {};
   };
+  "/configurations": {
+    params: {};
+  };
 };
 
 type RouteFiles = {
   "root.tsx": {
     id: "root";
-    page: "/" | "/auth/*" | "/entities" | "/import";
+    page: "/" | "/auth/*" | "/entities" | "/import" | "/configurations";
   };
   "routes/_index.tsx": {
     id: "routes/_index";
@@ -48,6 +51,10 @@ type RouteFiles = {
     id: "routes/import._index";
     page: "/import";
   };
+  "routes/configurations._index.tsx": {
+    id: "routes/configurations._index";
+    page: "/configurations";
+  };
 };
 
 type RouteModules = {
@@ -56,4 +63,5 @@ type RouteModules = {
   "routes/auth.$": typeof import("./app/routes/auth.$.tsx");
   "routes/entities._index": typeof import("./app/routes/entities._index.tsx");
   "routes/import._index": typeof import("./app/routes/import._index.tsx");
+  "routes/configurations._index": typeof import("./app/routes/configurations._index.tsx");
 };

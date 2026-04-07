@@ -12,6 +12,10 @@ Use the skills in `.agents/skills/` when working in relevant areas:
 - `multi-stage-dockerfile` — Optimized multi-stage Docker builds
 - `vercel-react-best-practices` — React/Vite performance patterns
 - `devops-engineer` — Deployment, Docker Compose, infrastructure
+- `export-pipeline` — Processor registry, `ExportStatus` state machine, 6-step checklist for new entity types (use when editing `modules/export/`, `modules/configuration/`, or `entities/entity-export*.ts`)
+- `bullmq` — Queue registration, `@Processor`/`WorkerHost` pattern, job progress, retry, cleanup policy (use when editing any file with `@Processor`, `InjectQueue`, `WorkerHost`, or `BullModule`)
+- `shopify-graphql` — Cursor pagination, rate limiting, bulk operations, GraphQL error handling (use when making any Shopify API call from `apps/api/src/`)
+- `brainstorm` — Structured feature ideation: produces a 7-section decision document before coding (use when the request says "let's add", "design a", "should we", or spans >1 module)
 
 ## Overview
 
@@ -66,12 +70,14 @@ web → postgres:5432 (session storage), api:3001
 ```
 
 ### API module structure (`apps/api/src/`)
-- `app.module.ts` — Root module wiring TypeORM, BullMQ, Config, Health, Import, Entities, Webhook
+- `app.module.ts` — Root module wiring TypeORM, BullMQ, Config, Health, Import, Entities, Webhook, Configuration, Export
 - `modules/health/` — `GET /health` endpoint
 - `modules/webhook/` — Shopify webhook receiver with HMAC validation
 - `modules/import/` — Bulk import orchestration via BullMQ (`bulk-import` queue)
 - `modules/entities/` — Entity statistics and listing
-- `entities/` — TypeORM models: `Shop`, `DbImport`, `DbHistory`
+- `modules/configuration/` — `GET|PUT /api/configuration/:shopDomain/:entityType` — stores export API credentials per entity type; `apiSecret` is write-only (never returned in responses)
+- `modules/export/` — Processor registry (`ProcessorListService`), per-entity export processors, `EntityExportRepository`; uses `ExportStatus` state machine (`Pending → Processing → Exported | Failed`)
+- `entities/` — TypeORM models: `Shop`, `DbImport`, `DbHistory`, `EntityExportEntity`, `EntityExportConfigEntity`
 
 ### Web route structure (`apps/web/app/routes/`)
 - `root.tsx` — App wrapper with Shopify AppProvider and Polaris
@@ -81,7 +87,7 @@ web → postgres:5432 (session storage), api:3001
 - `auth.$.tsx` — OAuth splat route
 
 ### Shared types (`packages/shared/src/`)
-- `enums.ts` — `EntityType` (Order, Customer, Product, Fulfillment, Refund, Collection), `ImportStatus` (Received → Processing → Processed/Failed/BulkImported)
+- `enums.ts` — `EntityType` (Order, Customer, Product, Fulfillment, Refund, Collection), `ImportStatus` (Received → Processing → Processed/Failed/BulkImported), `ExportStatus` (Pending → Processing → Exported/Failed)
 - `index.ts` — Re-exports all shared types and payloads
 
 ### Job queue
