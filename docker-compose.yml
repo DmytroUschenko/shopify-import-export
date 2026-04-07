@@ -88,6 +88,17 @@ services:
     # ports: internal only — accessed via nginx
     #  - '3000:3000'
 
+  adminer:
+    image: adminer:latest
+    restart: unless-stopped
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+    ports:
+      - '127.0.0.1:8090:8080'
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   nginx:
     image: nginx:alpine
     restart: unless-stopped
